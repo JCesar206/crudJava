@@ -6,93 +6,107 @@ import java.util.List;
 
 public class Formulario extends JFrame {
 
- // Atributos
- private JTextField txtId, txtNombre, txtCorreo;
+ // Campos
+ private JTextField txtNombre, txtCorreo, txtTelefono;
  private JButton btnGuardar, btnEliminar, btnLimpiar;
  private DefaultListModel<Persona> modeloLista;
  private JList<Persona> lista;
 
+ private Persona personaSeleccionada;
  private PersonaDAO dao = new PersonaDAO();
 
- // Constructor
  public Formulario() {
+
   setTitle("CRUD Personas");
-  setSize(400, 400);
+  setSize(520, 520);
   setDefaultCloseOperation(EXIT_ON_CLOSE);
-  setLocationRelativeTo(null); // Centrar ventana
+  setLocationRelativeTo(null);
   setLayout(new BorderLayout(10, 10));
 
-  // ===== FORMULARIO =====
-  JPanel panelFormulario = new JPanel(new GridLayout(3, 2, 10, 10));
-  panelFormulario.setBorder(BorderFactory.createTitledBorder("Datos"));
+  add(crearFormulario(), BorderLayout.NORTH);
+  add(crearBotones(), BorderLayout.CENTER);
+  add(crearLista(), BorderLayout.SOUTH);
 
-  txtId = new JTextField();
+  cargarLista();
+ }
+
+ // UI
+ private JPanel crearFormulario() {
+  JPanel panel = new JPanel(new GridLayout(3, 2, 10, 10));
+  panel.setBorder(BorderFactory.createCompoundBorder(
+      BorderFactory.createTitledBorder("Datos personales"),
+      BorderFactory.createEmptyBorder(10, 10, 10, 10)
+  ));
+
   txtNombre = new JTextField();
   txtCorreo = new JTextField();
+  txtTelefono = new JTextField();
 
-  panelFormulario.add(new JLabel("ID:"));
-  panelFormulario.add(txtId);
-  panelFormulario.add(new JLabel("Nombre:"));
-  panelFormulario.add(txtNombre);
-  panelFormulario.add(new JLabel("Correo:"));
-  panelFormulario.add(txtCorreo);
+  panel.add(new JLabel("Nombre:"));
+  panel.add(txtNombre);
+  panel.add(new JLabel("Correo:"));
+  panel.add(txtCorreo);
+  panel.add(new JLabel("Teléfono:"));
+  panel.add(txtTelefono);
 
-  add(panelFormulario, BorderLayout.NORTH);
+  return panel;
+ }
 
-  // ===== BOTONES =====
-  JPanel panelBotones = new JPanel(new FlowLayout());
+ private JPanel crearBotones() {
+  JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
 
   btnGuardar = new JButton("Guardar");
   btnEliminar = new JButton("Eliminar");
   btnLimpiar = new JButton("Limpiar");
 
-  panelBotones.add(btnGuardar);
-  panelBotones.add(btnEliminar);
-  panelBotones.add(btnLimpiar);
-
-  add(panelBotones, BorderLayout.CENTER);
-
-  // ===== LISTA =====
-  modeloLista = new DefaultListModel<>();
-  lista = new JList<>(modeloLista);
-  JScrollPane scroll = new JScrollPane(lista);
-  scroll.setBorder(BorderFactory.createTitledBorder("Registros"));
-
-  add(scroll, BorderLayout.SOUTH);
-
-  // ===== EVENTOS =====
   btnGuardar.addActionListener(e -> guardar());
   btnEliminar.addActionListener(e -> eliminar());
   btnLimpiar.addActionListener(e -> limpiar());
 
-  lista.addListSelectionListener(e -> cargarSeleccion());
+  panel.add(btnGuardar);
+  panel.add(btnEliminar);
+  panel.add(btnLimpiar);
 
-  // Cargar datos
-  cargarLista();
+  return panel;
  }
 
- // ===== MÉTODOS =====
+ private JScrollPane crearLista() {
+  modeloLista = new DefaultListModel<>();
+  lista = new JList<>(modeloLista);
+  lista.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
+  lista.addListSelectionListener(e -> cargarSeleccion());
+
+  JScrollPane scroll = new JScrollPane(lista);
+  scroll.setBorder(BorderFactory.createTitledBorder("Registros"));
+
+  return scroll;
+ }
+
+ // Lógica
  private void cargarLista() {
   modeloLista.clear();
   List<Persona> personas = dao.obtenerTodas();
   personas.forEach(modeloLista::addElement);
-  System.out.println("[LOG] Lista cargada");
+  System.out.println("[INFO] Lista cargada");
  }
 
  private void guardar() {
-  int id = Integer.parseInt(txtId.getText());
-  String nombre = txtNombre.getText();
-  String correo = txtCorreo.getText();
 
-  Persona p = new Persona(id, nombre, correo);
+  if (txtNombre.getText().isBlank() || txtCorreo.getText().isBlank()) {
+   JOptionPane.showMessageDialog(this, "Nombre y correo son obligatorios");
+   return;
+  }
 
-  if (txtId.isEnabled()) {
-   dao.agregar(p);
-   System.out.println("[LOG] Registro creado");
+  if (personaSeleccionada == null) {
+   Persona nueva = new Persona(0, txtNombre.getText(), txtCorreo.getText());
+   dao.agregar(nueva);
+   System.out.println("[INFO] Registro creado");
   } else {
-   dao.actualizar(p);
-   System.out.println("[LOG] Registro actualizado");
+   personaSeleccionada.setNombre(txtNombre.getText());
+   personaSeleccionada.setCorreo(txtCorreo.getText());
+   dao.actualizar(personaSeleccionada);
+   System.out.println("[INFO] Registro actualizado");
   }
 
   limpiar();
@@ -100,30 +114,30 @@ public class Formulario extends JFrame {
  }
 
  private void eliminar() {
-  Persona p = lista.getSelectedValue();
-  if (p != null) {
-   dao.eliminar(p.getId());
-   System.out.println("[LOG] Registro eliminado");
+  if (personaSeleccionada != null) {
+   dao.eliminar(personaSeleccionada.getId());
+   System.out.println("[INFO] Registro eliminado");
    limpiar();
    cargarLista();
   }
  }
 
  private void limpiar() {
-  txtId.setText("");
   txtNombre.setText("");
   txtCorreo.setText("");
-  txtId.setEnabled(true);
+  txtTelefono.setText("");
+  personaSeleccionada = null;
+  btnGuardar.setText("Guardar");
   lista.clearSelection();
  }
 
  private void cargarSeleccion() {
-  Persona p = lista.getSelectedValue();
-  if (p != null) {
-   txtId.setText(String.valueOf(p.getId()));
-   txtNombre.setText(p.getNombre());
-   txtCorreo.setText(p.getCorreo());
-   txtId.setEnabled(false);
+  personaSeleccionada = lista.getSelectedValue();
+
+  if (personaSeleccionada != null) {
+   txtNombre.setText(personaSeleccionada.getNombre());
+   txtCorreo.setText(personaSeleccionada.getCorreo());
+   btnGuardar.setText("Actualizar");
   }
  }
 }
