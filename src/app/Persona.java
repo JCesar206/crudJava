@@ -1,7 +1,8 @@
 package app;
-
 import java.io.Serializable;
-public class Persona implements Serializable{
+
+public class Persona implements Serializable {
+
  private int id;
  private String nombre;
  private String correo;
@@ -14,18 +15,22 @@ public class Persona implements Serializable{
  public int getId() {
   return id;
  }
+ public void setId(int id) {
+  this.id = id;
+ }
  public String getNombre() {
   return nombre;
- }
- public String getCorreo() {
-  return correo;
  }
  public void setNombre(String nombre) {
   this.nombre = nombre;
  }
+ public String getCorreo() {
+  return correo;
+ }
  public void setCorreo(String correo) {
   this.correo = correo;
  }
+
  @Override
  public String toString() {
   return id + " - " + nombre + " - " + correo;
