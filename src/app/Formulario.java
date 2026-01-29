@@ -3,6 +3,8 @@ package app;
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
+import app.ui.Footer;
+import app.util.I18n;
 
 public class Formulario extends JFrame {
 
@@ -13,51 +15,93 @@ public class Formulario extends JFrame {
  private JList<Persona> lista;
 
  private Persona personaSeleccionada;
- private PersonaDAO dao = new PersonaDAO();
+ private final PersonaDAO dao = new PersonaDAO();
 
+ // Constructor
  public Formulario() {
-
-  setTitle("CRUD Personas");
-  setSize(520, 520);
+  
+  setTitle(I18n.t("title"));
+  setSize(600, 650);
   setDefaultCloseOperation(EXIT_ON_CLOSE);
   setLocationRelativeTo(null);
   setLayout(new BorderLayout(10, 10));
-
+  
+  // Menu superior
+  JMenuBar menuBar = new JMenuBar();
+  
+  JMenu menuLang = new JMenu(I18n.t("language"));
+  JMenuItem es = new JMenuItem(I18n.t("spanish"));
+  JMenuItem en = new JMenuItem(I18n.t("english"));
+  
+  es.addActionListener(e -> cambiarIdioma("es"));
+  en.addActionListener(e -> cambiarIdioma("en"));
+  
+  menuLang.add(es);
+  menuLang.add(en);
+  
+  // JMenu menuTheme = new JMenu("Tema");
+  // JMenuItem light = new JMenuItem("Claro");
+  // JMenuItem dark = new JMenuItem("Oscuro");
+  
+  // light.addActionListener(e -> cambiarTema(false));
+  // dark.addActionListener(e -> cambiarTema(true));
+  
+  // menuTheme.add(light);
+  // menuTheme.add(dark);
+  
+  menuBar.add(menuLang);
+  // menuBar.add(menuTheme);
+  
+  setJMenuBar(menuBar);
+  
+  // Panel super (formulario)
   add(crearFormulario(), BorderLayout.NORTH);
-  add(crearBotones(), BorderLayout.CENTER);
-  add(crearLista(), BorderLayout.SOUTH);
-
+  // Centro (Botones + Lista)
+  JPanel panelCentro = new JPanel(new BorderLayout(10, 10));
+  panelCentro.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
+  panelCentro.add(crearBotones(), BorderLayout.NORTH);
+  panelCentro.add(crearLista(), BorderLayout.CENTER);
+  add(panelCentro, BorderLayout.CENTER);
+  // Footer abajo
+  add(new Footer(), BorderLayout.SOUTH);
   cargarLista();
  }
 
  // UI
  private JPanel crearFormulario() {
-  JPanel panel = new JPanel(new GridLayout(3, 2, 10, 10));
+  JPanel panel = new JPanel(new GridLayout(5, 2, 12, 12));
   panel.setBorder(BorderFactory.createCompoundBorder(
-      BorderFactory.createTitledBorder("Datos personales"),
-      BorderFactory.createEmptyBorder(10, 10, 10, 10)
+      BorderFactory.createTitledBorder(I18n.t("data")),
+      BorderFactory.createEmptyBorder(15, 15, 15, 15)
   ));
-
+  panel.setBackground(Color.WHITE);
+  
   txtNombre = new JTextField();
   txtCorreo = new JTextField();
   txtTelefono = new JTextField();
-
-  panel.add(new JLabel("Nombre:"));
+  
+  panel.add(new JLabel(I18n.t("name") + ":"));
   panel.add(txtNombre);
-  panel.add(new JLabel("Correo:"));
+  panel.add(new JLabel(I18n.t("email") + ":"));
   panel.add(txtCorreo);
-  panel.add(new JLabel("Teléfono:"));
+  panel.add(new JLabel(I18n.t("phone") + ":"));
   panel.add(txtTelefono);
-
+  
   return panel;
  }
 
+ private void cambiarIdioma(String lang) {
+ I18n.setLanguage(lang);
+ dispose();
+ new Formulario().setVisible(true);
+ }
+ 
  private JPanel crearBotones() {
   JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
 
-  btnGuardar = new JButton("Guardar");
-  btnEliminar = new JButton("Eliminar");
-  btnLimpiar = new JButton("Limpiar");
+  btnGuardar = new JButton(I18n.t("save"));
+  btnEliminar = new JButton(I18n.t("delete"));
+  btnLimpiar = new JButton(I18n.t("clear"));
 
   btnGuardar.addActionListener(e -> guardar());
   btnEliminar.addActionListener(e -> eliminar());
@@ -78,7 +122,7 @@ public class Formulario extends JFrame {
   lista.addListSelectionListener(e -> cargarSeleccion());
 
   JScrollPane scroll = new JScrollPane(lista);
-  scroll.setBorder(BorderFactory.createTitledBorder("Registros"));
+  scroll.setBorder(BorderFactory.createTitledBorder(I18n.t("registers")));
 
   return scroll;
  }
@@ -94,17 +138,29 @@ public class Formulario extends JFrame {
  private void guardar() {
 
   if (txtNombre.getText().isBlank() || txtCorreo.getText().isBlank()) {
-   JOptionPane.showMessageDialog(this, "Nombre y correo son obligatorios");
+   JOptionPane.showMessageDialog(this,
+    I18n.t("required"),
+    "Warning",
+     JOptionPane.WARNING_MESSAGE
+    );
    return;
   }
 
   if (personaSeleccionada == null) {
-   Persona nueva = new Persona(0, txtNombre.getText(), txtCorreo.getText());
-   dao.agregar(nueva);
+   Persona p = new Persona(
+    0,
+    txtNombre.getText(),
+    txtCorreo.getText(),
+    txtTelefono.getText()
+   );
+   
+   dao.agregar(p);
    System.out.println("[INFO] Registro creado");
   } else {
    personaSeleccionada.setNombre(txtNombre.getText());
    personaSeleccionada.setCorreo(txtCorreo.getText());
+   personaSeleccionada.setTelefono(txtTelefono.getText());
+   
    dao.actualizar(personaSeleccionada);
    System.out.println("[INFO] Registro actualizado");
   }
@@ -126,8 +182,9 @@ public class Formulario extends JFrame {
   txtNombre.setText("");
   txtCorreo.setText("");
   txtTelefono.setText("");
+  
   personaSeleccionada = null;
-  btnGuardar.setText("Guardar");
+  btnGuardar.setText(I18n.t("save"));
   lista.clearSelection();
  }
 
@@ -137,7 +194,9 @@ public class Formulario extends JFrame {
   if (personaSeleccionada != null) {
    txtNombre.setText(personaSeleccionada.getNombre());
    txtCorreo.setText(personaSeleccionada.getCorreo());
-   btnGuardar.setText("Actualizar");
+   txtTelefono.setText(personaSeleccionada.getTelefono());
+   
+   btnGuardar.setText(I18n.t("update"));
   }
  }
 }
